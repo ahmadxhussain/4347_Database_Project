@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SQL Query Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        textarea { width: 100%; font-family: monospace; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .error { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>SQL Query Interface</h1>
+    <textarea id="query" rows="8" placeholder="Enter SQL query here..."></textarea><br>
+    <button onclick="sendQuery()">Run</button>
+
+    <div id="output"></div>
+
+    <script>
+        async function sendQuery() {
+            const query = document.getElementById('query').value;
+            const output = document.getElementById('output');
+            output.innerHTML = "Loading...";
+
+            const res = await fetch('/api/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+
+            const data = await res.json();
+            output.innerHTML = "";
+
+            if (!data.success) {
+                output.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                return;
+            }
+
+            data.data.forEach((result, index) => {
+                if (Array.isArray(result)) {
+                    if (result.length === 0) {
+                        output.innerHTML += `<p><strong>Result ${index + 1}:</strong> No rows returned.</p>`;
+                    } else {
+                        const headers = Object.keys(result[0]);
+                        let table = `<p><strong>Result ${index + 1}:</strong></p><table><tr>`;
+                        headers.forEach(h => table += `<th>${h}</th>`);
+                        table += `</tr>`;
+                        result.forEach(row => {
+                            table += `<tr>`;
+                            headers.forEach(h => table += `<td>${row[h]}</td>`);
+                            table += `</tr>`;
+                        });
+                        table += `</table>`;
+                        output.innerHTML += table;
+                    }
+                } else {
+                    output.innerHTML += `<p><strong>Result ${index + 1}:</strong> ${result}</p>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

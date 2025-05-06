@@ -205,6 +205,25 @@ def main():
     generate_inmates(cursor, conn)
     generate_visitors(cursor, conn)
 
+    # migrate the real guard assignments into the junction…
+    cursor.execute("""
+      INSERT INTO Inmate_Staff (InmateID, StaffID, AssignmentStart)
+      SELECT i.InmateID, i.StaffID, CURDATE()
+      FROM Inmate i
+      JOIN Staff s ON i.StaffID = s.StaffID
+      WHERE i.StaffID IS NOT NULL;
+    """)
+    # same for rehab and lawyer…
+    cursor.execute("""
+      INSERT INTO Inmate_RehabProgram (InmateID,RehabID,EnrollDate)
+      SELECT InmateID,RehabID,CURDATE() FROM Inmate WHERE RehabID IS NOT NULL;
+    """)
+    cursor.execute("""
+      INSERT INTO Inmate_Lawyer (InmateID,LawyerID,CaseStartDate)
+      SELECT InmateID,LawyerID,CURDATE() FROM Inmate WHERE LawyerID IS NOT NULL;
+    """)
+    conn.commit()
+
     cursor.close()
     conn.close()
 
